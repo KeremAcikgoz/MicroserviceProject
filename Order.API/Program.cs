@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Order.API.Clients;
 using OrderAPI.Models.DbOperations;
+using Polly;
 using System.Buffers;
 using System.Reflection;
 
@@ -25,7 +26,13 @@ builder.Services.AddScoped<IOrderDbContext>(provider => provider.GetRequiredServ
 builder.Services.AddHttpClient<CustomerClient>(client =>
 {
     client.BaseAddress = new Uri("https://localhost:7001");
-});
+})
+    .AddTransientHttpErrorPolicy(builder => builder.WaitAndRetryAsync(
+        5,
+        retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)) //seconds to wait for each retry.
+     ))
+    .AddPolicyHandler(Policy.TimeoutAsync<HttpResponseMessage>(1));// wait at much 1 second before giving up
+    
 
 var app = builder.Build();
 

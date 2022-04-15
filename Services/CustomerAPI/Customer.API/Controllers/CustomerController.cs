@@ -25,6 +25,7 @@ namespace Customer.API.Controllers
 
         private readonly ICustomerDbContext _context;
         private readonly IMapper _mapper;
+        private static int requestCounter = 0;
 
         public CustomerController(ICustomerDbContext context, IMapper mapper)
         {
@@ -35,8 +36,25 @@ namespace Customer.API.Controllers
         [HttpGet]
         public IActionResult GetCustomers()
         {
+            requestCounter++;
+            Console.WriteLine($"Request {requestCounter} starting...");
+
+            if( requestCounter <=2 )
+            {
+                Console.WriteLine($"Request {requestCounter} Delaying...");
+                Task.Delay(TimeSpan.FromSeconds(10));
+            }
+
+            if (requestCounter <= 4)
+            {
+                Console.WriteLine($"Request {requestCounter}: 500 Internal Server Error...");
+                return StatusCode(500);
+            }
+
             GetCustomersQuery query = new GetCustomersQuery(_context, _mapper);
             var result = query.Handle();
+            Console.WriteLine($"Request {requestCounter}: 200 (Ok).");
+
             return Ok(result);  
         }
 
